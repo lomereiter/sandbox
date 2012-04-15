@@ -19,7 +19,7 @@ int main(int argc, const char** argv) {
 
     ifstream fin("../data/Cucumber_v2i.gff3");
     
-    unordered_map<string, unsigned int> occurrences;
+    tbb::concurrent_unordered_map<string, unsigned int> occurrences;
     
     const size_t CHUNK_SIZE = argc == 1 ? 100 : atoi(argv[1]);
 

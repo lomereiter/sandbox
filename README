@@ -1,0 +1,1 @@
+The examples show how to get distribution of feature types from GFF3 file with Intel Threading Building Blocks, using parallel_for or parallel_pipeline constructs and lambda functions from C++11.
