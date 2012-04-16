@@ -6,6 +6,8 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <memory>
+
 #include <tbb/tbb.h>
 
 #include "splitter.hpp"
@@ -14,6 +16,7 @@
 using namespace std;
 
 typedef vector<string> Chunk;
+typedef std::shared_ptr<Chunk> ChunkPtr;
 
 int main(int argc, const char** argv) {
 
@@ -26,10 +29,10 @@ int main(int argc, const char** argv) {
 timeit([&](){
     tbb::parallel_pipeline(
             tbb::task_scheduler_init::default_num_threads(),
-            tbb::make_filter<void, Chunk*>(
+            tbb::make_filter<void, ChunkPtr>(
                 tbb::filter::serial_in_order,
-                [&](tbb::flow_control& fc) -> Chunk* {
-                    Chunk* chunk = new Chunk;
+                [&](tbb::flow_control& fc) -> ChunkPtr {
+                    auto chunk = std::make_shared<Chunk>();
                     chunk->reserve(CHUNK_SIZE);
                     for (size_t pushed = 0; pushed < CHUNK_SIZE && fin.good(); ) {
                         string s;
@@ -41,30 +44,28 @@ timeit([&](){
                     }
                     if (chunk->size() == 0) {
                         fc.stop();
-                        delete chunk;
                         return nullptr;
                     }
-                    return chunk;
+                    return std::move(chunk);
                 }) 
         &
-            tbb::make_filter<Chunk*, Chunk*>(
+            tbb::make_filter<ChunkPtr, ChunkPtr>(
                 tbb::filter::parallel,
-                [&](Chunk* lines) -> Chunk* { // in-place
+                [&](ChunkPtr lines) -> ChunkPtr { // in-place
                     for (auto& line : *lines) {
                         StringSplitter<'\t'> splitter(line.c_str());
                         assert(splitter.length >= 3);
                         line = std::string(splitter.data[2]); 
                     }
-                    return lines;
+                    return std::move(lines);
                 }) 
         &
-            tbb::make_filter<Chunk*, void>(
+            tbb::make_filter<ChunkPtr, void>(
                 tbb::filter::parallel,
-                [&](Chunk* types) {
+                [&](ChunkPtr types) {
                     for (const auto& type : *types) {
                         occurrences[type] += 1;
                     }
-                    delete types;
                 }));
 }, "total");
 
