@@ -13,12 +13,11 @@ string make_parallel(string funcname, string methodname,
 }
 
 mixin(make_parallel("parallelMap", "map", true));
-mixin(make_parallel("parallelForeach", "parallel"));
 mixin(make_parallel("asyncBuf", "asyncBuf"));
 
-template eachDo(fun...) {
-    auto eachDo(Range)(Range r) {
-        foreach(elem; r) {
+template parallelEachDo(fun...) {
+    auto parallelEachDo(Range, Args...)(Range r, TaskPool pool, Args args) {
+        foreach(elem; pool.parallel(r, args)) {
             unaryFun!fun(elem);
         }
     }
@@ -34,10 +33,9 @@ void main(string[] args) {
     fin.byLine()
        .map!"a.idup"()
        .filter!"a.length != 0 && a[0] != '#'"()
-       .asyncBuf(pool, 100)
+       .asyncBuf(pool, 200)
        .parallelMap!"array(splitter(a, '\t'))[2].idup"(pool)
-       .parallelForeach(pool)
-       .eachDo!(type => ++occurrences[type])();
+       .parallelEachDo!(type => ++occurrences[type])(pool);
 
     pool.finish();
 
