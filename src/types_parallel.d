@@ -2,42 +2,47 @@ import std.stdio;
 import std.algorithm;
 import std.array;
 import std.parallelism;
-import core.sync.mutex;
+import std.functional;
 
-synchronized class OccurrenceCounter {
-    private shared(uint[string]) occurrences;
+string make_parallel(string funcname, string methodname,
+                     bool functional = false) {
+    auto s = "auto " ~ funcname ~ "(Range, Args...)(Range r, TaskPool pool, Args args) {" ~
+                 "return pool." ~ methodname ~ (functional ? "!(fun)" : "") ~ "(r, args);" ~
+             "}";
+    return functional ? "template " ~ funcname ~ "(fun...) {" ~ s ~ "}" : s;
+}
 
-    synchronized public void increment(string str) {
-        occurrences[str] += 1;
-    }
+mixin(make_parallel("parallelMap", "map", true));
+mixin(make_parallel("parallelForeach", "parallel"));
+mixin(make_parallel("asyncBuf", "asyncBuf"));
 
-    synchronized public @property auto keys() {
-        return occurrences.keys;
-    }
-
-    synchronized public uint opIndex(string s) const {
-        return occurrences[s];
+template eachDo(fun...) {
+    auto eachDo(Range)(Range r) {
+        foreach(elem; r) {
+            unaryFun!fun(elem);
+        }
     }
 }
 
-
 void main(string[] args) {
-    auto occurrences = new shared(OccurrenceCounter);
     auto fin = File("../data/Cucumber_v2i.gff3");
 
-    string[] lines = [];
-    foreach(line; fin.byLine())
-        lines ~= line.idup;
+    int[string] occurrences;
 
-    foreach(line; taskPool.parallel(lines, 500)) {
-            if (line.length == 0 || line[0] == '#') {
-                continue;
-            }
-            string type = array(splitter(line.dup, '\t'))[2].idup;
-            occurrences.increment(type);
-    }
+    auto pool = new TaskPool(totalCPUs);
+
+    fin.byLine()
+       .map!"a.idup"()
+       .filter!"a.length != 0 && a[0] != '#'"()
+       .asyncBuf(pool, 100)
+       .parallelMap!"array(splitter(a, '\t'))[2].idup"(pool)
+       .parallelForeach(pool)
+       .eachDo!(type => ++occurrences[type])();
+
+    pool.finish();
 
     foreach(type; occurrences.keys) {
         writefln("%s: %s", type, occurrences[type]);
     }
+
 }
