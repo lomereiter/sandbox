@@ -1,7 +1,7 @@
 #ifndef STRING_SPLITTER_H
 #define STRING_SPLITTER_H
 
-#include <cstring>
+#include <string>
 
 template <char Delimiter>
 class StringSplitter {
@@ -33,7 +33,7 @@ public:
         }
     }
 
-    std::string operator[](size_t i) {
+    std::string operator[](size_t i) const {
         return str.substr(beg[i], end[i] - beg[i]);
     }
 

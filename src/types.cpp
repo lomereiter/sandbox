@@ -41,9 +41,9 @@ timeit([&](){
 
     auto store_type = [&](size_t i) {
         StringSplitter<'\t'> splitter(lines[i]);
-        lines[i].clear();
         assert(splitter.length >= 3);
         types[i] = splitter[2]; 
+        lines[i].clear();
     };
 
 timeit([&](){
