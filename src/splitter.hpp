@@ -2,7 +2,6 @@
 #define STRING_SPLITTER_H
 
 #include <cstring>
-#include <vector>
 
 template <char Delimiter>
 class StringSplitter {
@@ -13,8 +12,10 @@ public:
 
     StringSplitter(const char* str) : length(0) {
         size_t i;
-        std::vector<size_t> beg;
-        std::vector<size_t> end;
+
+        size_t beg[16];
+        size_t end[16];
+
 /*
  *    beg[0]     beg[1]  beg[2]  beg[3]
  *    v          v       v        v
@@ -22,15 +23,16 @@ public:
  *            ^         ^        ^         ^
  *           end[0]    end[1]   end[2]  end[3]
  */
+
         for (i = 0; str[i] != '\0'; ++i) {
             if (str[i] != Delimiter) {
-                beg.push_back(i++);
+                assert(length < 9);
+                beg[length] = i++;
                 for ( ; str[i] != '\0' && str[i] != Delimiter; ++i);
-                end.push_back(i);
+                end[length++] = i;
             }
         }
 
-        length = beg.size();
         data = new char*[length];
           
         for (i = 0; i < length; ++i) {

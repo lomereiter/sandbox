@@ -15,25 +15,27 @@ string make_parallel(string funcname, string methodname,
 mixin(make_parallel("parallelMap", "map", true));
 mixin(make_parallel("asyncBuf", "asyncBuf"));
 
+template eachDo(fun...) {
+    auto eachDo(Range)(Range r) { foreach(elem; r) unaryFun!fun(elem); }
+}
+
 template parallelEachDo(fun...) {
     auto parallelEachDo(Range, Args...)(Range r, TaskPool pool, Args args) {
-        foreach(elem; pool.parallel(r, args)) {
-            unaryFun!fun(elem);
-        }
+        eachDo!(fun)(pool.parallel(r, args));
     }
 }
 
 void main(string[] args) {
     auto fin = File("../data/Cucumber_v2i.gff3");
 
-    int[string] occurrences;
+    shared int[string] occurrences;
 
-    auto pool = new TaskPool(totalCPUs);
+    auto pool = new TaskPool(totalCPUs-1);
 
     fin.byLine()
        .map!"a.idup"()
        .filter!"a.length != 0 && a[0] != '#'"()
-       .asyncBuf(pool, 200)
+       .asyncBuf(pool, 500)
        .parallelMap!"array(splitter(a, '\t'))[2].idup"(pool)
        .parallelEachDo!(type => ++occurrences[type])(pool);
 

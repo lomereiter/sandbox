@@ -1,6 +1,6 @@
-CXX=g++
+CXX=clang++
 CXX11_FLAGS = -std=c++0x
-FLAGS = $(CXX11_FLAGS) -O3 -DNDEBUG -g
+FLAGS = $(CXX11_FLAGS) -O3 -DNDEBUG
 TBB_FLAGS = -ltbb -DTBB
 
 all: serial parallel pipeline

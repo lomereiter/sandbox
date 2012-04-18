@@ -20,6 +20,8 @@ typedef std::shared_ptr<Chunk> ChunkPtr;
 
 int main(int argc, const char** argv) {
 
+    tbb::task_scheduler_init(3);
+
     ifstream fin("../data/Cucumber_v2i.gff3");
     
     tbb::concurrent_unordered_map<string, unsigned int> occurrences;
@@ -28,7 +30,7 @@ int main(int argc, const char** argv) {
 
 timeit([&](){
     tbb::parallel_pipeline(
-            tbb::task_scheduler_init::default_num_threads(),
+            10,
             tbb::make_filter<void, ChunkPtr>(
                 tbb::filter::serial_in_order,
                 [&](tbb::flow_control& fc) -> ChunkPtr {
@@ -39,7 +41,7 @@ timeit([&](){
                         getline(fin, s);
                         if (!s.empty() && s[0] != '#') {
                             ++pushed;
-                            chunk->push_back(std::move(s));
+                            chunk->push_back(s);
                         }
                     }
                     if (chunk->size() == 0) {
