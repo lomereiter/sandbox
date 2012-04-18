@@ -30,7 +30,7 @@ int main(int argc, const char** argv) {
 
 timeit([&](){
     tbb::parallel_pipeline(
-            10,
+            5,
             tbb::make_filter<void, ChunkPtr>(
                 tbb::filter::serial_in_order,
                 [&](tbb::flow_control& fc) -> ChunkPtr {
@@ -55,9 +55,9 @@ timeit([&](){
                 tbb::filter::parallel,
                 [&](ChunkPtr lines) -> ChunkPtr { // in-place
                     for (auto& line : *lines) {
-                        StringSplitter<'\t'> splitter(line.c_str());
+                        StringSplitter<'\t'> splitter(line);
                         assert(splitter.length >= 3);
-                        line = std::string(splitter.data[2]); 
+                        line = splitter[2]; 
                     }
                     return std::move(lines);
                 }) 

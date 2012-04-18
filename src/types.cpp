@@ -40,10 +40,10 @@ timeit([&](){
     vector<string> types(lines.size());
 
     auto store_type = [&](size_t i) {
-        StringSplitter<'\t'> splitter(lines[i].c_str());
+        StringSplitter<'\t'> splitter(lines[i]);
         lines[i].clear();
         assert(splitter.length >= 3);
-        types[i] = splitter.data[2]; // copying 
+        types[i] = splitter[2]; 
     };
 
 timeit([&](){
